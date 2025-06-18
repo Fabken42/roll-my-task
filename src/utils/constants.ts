@@ -1,0 +1,1 @@
+export const MAX_TASK_NAME_LENGTH = 50;
