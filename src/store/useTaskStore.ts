@@ -17,6 +17,8 @@ type TaskStore = {
   toggleTask: (id: string) => void
   completeRandomTask: () => Task | null
   clearSelectedTask: () => void
+  deleteAllTasks: () => void
+  resetAllTasks: () => void
 }
 
 export const useTaskStore = create<TaskStore>()(
@@ -24,6 +26,12 @@ export const useTaskStore = create<TaskStore>()(
     (set, get) => ({
       tasks: [],
       selectedTask: null,
+      deleteAllTasks: () => set({ tasks: [], selectedTask: null }),
+      resetAllTasks: () =>
+        set((state) => ({
+          tasks: state.tasks.map((task) => ({ ...task, completed: false })),
+          selectedTask: null,
+        })),
       addTask: (title) =>
         set((state) => ({
           tasks: [...state.tasks, { id: crypto.randomUUID(), title: title.slice(0, MAX_TASK_NAME_LENGTH), completed: false }],

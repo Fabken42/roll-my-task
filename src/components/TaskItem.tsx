@@ -17,29 +17,7 @@ export default function TaskItem({ id, title, completed }: Props) {
 
 
   const handleDelete = () => {
-    Swal.fire({
-      title: 'Excluir tarefa',
-      text: 'Deseja mesmo remover esta tarefa?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sim, excluir!',
-      cancelButtonText: 'Cancelar',
-      background: '#445',
-      color: '#eee'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        deleteTask(id)
-        Swal.fire({
-          title: 'Excluída!',
-          text: 'A tarefa foi removida.',
-          icon: 'success',
-          background: '#445',
-          color: '#eee'
-        })
-      }
-    })
+    deleteTask(id);
   }
 
   const handleTitleChange = () => {
@@ -49,6 +27,7 @@ export default function TaskItem({ id, title, completed }: Props) {
       inputValue: title,
       showCancelButton: true,
       confirmButtonText: 'Salvar',
+      cancelButtonText: 'Cancelar',
       background: '#445',
       color: '#eee',
       inputValidator: (value) => {
@@ -69,7 +48,7 @@ export default function TaskItem({ id, title, completed }: Props) {
         }`}
     >
       <span
-        className={`flex-1 cursor-pointer text-center ${completed ? 'opacity-85' : ''}`}
+        className={`text-[1.1em] break-all flex-1 cursor-pointer text-center ${completed ? 'opacity-85' : ''}`}
         onClick={handleTitleChange}
       >
         {title}

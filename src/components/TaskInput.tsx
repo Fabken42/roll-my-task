@@ -2,15 +2,27 @@
 import { useState } from 'react'
 import { useTaskStore } from '@/store/useTaskStore'
 import { Plus } from 'lucide-react'
-import { MAX_TASK_NAME_LENGTH } from '@/utils/constants'
+import { MAX_TASK_NAME_LENGTH, MAX_TASKS } from '@/utils/constants'
+import Swal from 'sweetalert2'
 
 export default function TaskInput() {
   const [title, setTitle] = useState('')
   const addTask = useTaskStore((state) => state.addTask)
+  const tasks = useTaskStore((state) => state.tasks)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (title.trim() === '') return
+    if (tasks.length >= MAX_TASKS) {
+      Swal.fire({
+        title: 'Limite atingido!',
+        text: `Máximo de ${MAX_TASKS} tarefas permitidas!`,
+        icon: 'warning',
+        background: '#445',
+        color: '#eee',
+      })
+      return
+    }
     addTask(title.trim())
     setTitle('')
   }
