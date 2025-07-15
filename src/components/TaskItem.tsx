@@ -48,7 +48,7 @@ export default function TaskItem({ id, title, completed }: Props) {
         }`}
     >
       <span
-        className={`text-[1.1em] break-all flex-1 cursor-pointer text-center ${completed ? 'opacity-85' : ''}`}
+        className={`text-[1.2em] break-all flex-1 cursor-pointer text-center ${completed ? 'opacity-85' : ''}`}
         onClick={handleTitleChange}
       >
         {title}

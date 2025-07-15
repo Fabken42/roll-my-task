@@ -1,18 +1,4 @@
-// 'use client'
-// import { useTaskStore } from '@/store/useTaskStore'
-// import TaskItem from './TaskItem'
 
-// export default function TaskList() {
-//   const tasks = useTaskStore((state) => state.tasks)
-
-//   return (
-//     <div className="space-y-3 pt-4 w-full max-w-3xl mx-auto">
-//       {tasks.map((task) => (
-//         <TaskItem key={task.id} {...task} />
-//       ))}
-//     </div>
-//   )
-// }
 'use client'
 import { useTaskStore } from '@/store/useTaskStore'
 import TaskItem from './TaskItem'
@@ -73,7 +59,7 @@ export default function TaskList() {
   }
 
   return (
-    <div className="space-y-3 pt-4 w-full max-w-3xl mx-auto">
+    <div className="space-y-3 pt-4 w-full mx-auto">
       <div className="flex justify-between items-center">
         <div className="flex gap-4 text-sm text-[#eee]">
           <span className='text-[1.1em]'>Total: {total}</span>

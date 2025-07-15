@@ -29,23 +29,32 @@ export default function TaskInput() {
 
   return (
     <form
-      onSubmit={handleSubmit}
-      className="flex gap-2 mb-3 w-full max-w-3xl mx-auto"
+  onSubmit={handleSubmit}
+  className="flex flex-col gap-1 mb-3 w-full mx-auto"
+>
+  <label 
+    htmlFor="task-title" 
+    className="text-[#eee]"
+  >
+    Digite uma tarefa:
+  </label>
+  <div className="flex gap-2">
+    <input
+      id="task-title"
+      type="text"
+      maxLength={MAX_TASK_NAME_LENGTH}
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
+      placeholder={`[máximo ${MAX_TASK_NAME_LENGTH} caracteres]`}
+      className="flex-grow bg-[#445] text-[#eee] rounded p-2 break-words overflow-wrap break-word"
+    />
+    <button
+      type="submit"
+      className="bg-[#445] text-[#eee] p-2 rounded hover:opacity-80 transition"
     >
-      <input
-        type="text"
-        maxLength={MAX_TASK_NAME_LENGTH}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder={`Digite uma tarefa (máx ${MAX_TASK_NAME_LENGTH} caracteres)`}
-        className="flex-grow bg-[#445] text-[#eee] rounded p-2 break-words overflow-wrap break-word"
-      />
-      <button
-        type="submit"
-        className="bg-[#445] text-[#eee] p-2 rounded hover:opacity-80 transition"
-      >
-        <Plus />
-      </button>
-    </form>
+      <Plus />
+    </button>
+  </div>
+</form>
   )
 }

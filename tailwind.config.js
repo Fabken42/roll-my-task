@@ -18,6 +18,7 @@ module.exports = {
           '50%': { transform: 'translateY(-10px)' },
         },
       },
+      
     },
   },
   plugins: [],

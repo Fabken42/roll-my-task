@@ -12,3 +12,13 @@ body {
     min-height: 100%;
     font-family: 'Poppins', sans-serif !important;
 }
+
+@keyframes pulse-alert {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-pulse-alert {
+  animation: pulse-alert 0.5s infinite;
+}
