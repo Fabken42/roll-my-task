@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Settings, AlarmClock, Play, Pause, TimerReset } from 'lucide-react'
 import Swal from 'sweetalert2'
 import { useTaskStore } from '@/store/useTaskStore'
@@ -31,13 +31,6 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
     const audioRef = useRef<HTMLAudioElement | null>(null)
     const clickSoundRef = useRef<HTMLAudioElement | null>(null)
     const progress = timeLeft / (minutes * 60)
-    useEffect(() => {
-        return () => {
-            if ((window as any).playSoundPreview) {
-                delete (window as any).playSoundPreview
-            }
-        }
-    }, [])
 
     useEffect(() => {
         const savedSettings = localStorage.getItem('timerSettings')
@@ -55,6 +48,32 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
         clickSoundRef.current.volume = 0.5
     }, [])
 
+    const getTaskMessage = useCallback(() => {
+        const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+
+        if (!tasks.length) return 'Nenhuma tarefa criada!'
+        const incomplete = tasks.filter(t => !t.completed)
+
+        if (!incomplete.length) return 'Você concluiu todas as tarefas!'
+        if (!selectedTaskId) return 'Nenhuma tarefa selecionada!'
+
+        const task = tasks.find(t => t.id === selectedTaskId)
+        if (!task) return 'Tarefa não encontrada!'
+
+        return capitalize(task.title)
+    }, [selectedTaskId, tasks])
+
+    const formatTime = useCallback(() => {
+        const hours = Math.floor(timeLeft / 3600)
+        const mins = Math.floor((timeLeft % 3600) / 60)
+        const secs = timeLeft % 60
+
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+        } else {
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+        }
+    }, [timeLeft])
 
     useEffect(() => {
         if (isActive) {
@@ -62,7 +81,12 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
         } else {
             document.title = 'Roll My Task'
         }
-    }, [timeLeft, isActive])
+    }, [timeLeft, isActive, formatTime, getTaskMessage])
+
+    const resetTimer = useCallback(() => {
+        setIsActive(false)
+        setTimeLeft(Math.round(minutes * 60))
+    }, [minutes, setIsActive])
 
     useEffect(() => {
         if (!triggerBounceId) return;
@@ -76,19 +100,7 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
         const timer = setTimeout(() => setBounce(false), 1000);
 
         return () => clearTimeout(timer);
-    }, [triggerBounceId, tasks]);
-
-
-    const getTaskMessage = () => {
-        const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
-
-        if (selectedTaskId === null) return 'Nenhuma tarefa selecionada!'
-
-        const task = tasks.find(t => t.id === selectedTaskId)
-        if (!task) return 'Nenhuma tarefa pendente!'
-
-        return capitalize(task.title)
-    }
+    }, [triggerBounceId, tasks, resetTimer])
 
     // Salvar configurações quando mudarem
     useEffect(() => {
@@ -96,13 +108,52 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
         localStorage.setItem('timerSettings', JSON.stringify(settings))
     }, [minutes, autoStart, selectedSound])
 
+    const startTimerHandler = useCallback(() => {
+        setIsActive(true)
+    }, [setIsActive])
+
     // Efeito para iniciar o timer automaticamente
     useEffect(() => {
         if (startTimerFlag && autoStart && !isActive) {
             startTimerHandler();
             setStartTimerFlag(false)
         }
-    }, [startTimerFlag, autoStart, isActive])
+    }, [startTimerFlag, autoStart, isActive, startTimerHandler, setStartTimerFlag])
+
+    const playSoundPreview = useCallback((soundId: string) => {
+        const sound = alarmSounds.find(s => s.id === soundId)
+        if (sound) {
+            const previewAudio = new Audio(sound.file)
+            previewAudio.volume = 0.7
+            previewAudio.play().catch(e => console.error("Erro ao tocar prévia:", e))
+        }
+    }, [])
+
+    const pauseTimer = () => {
+        setIsActive(false)
+    }
+
+    const playClickSound = useCallback(() => {
+        if (clickSoundRef.current) {
+            clickSoundRef.current.volume = 0.5
+            clickSoundRef.current.currentTime = 0
+            clickSoundRef.current.play().catch(() => { })
+        }
+    }, [])
+
+    const playAlarmSound = useCallback(() => {
+        if (audioRef.current) {
+            audioRef.current.pause()
+            audioRef.current.currentTime = 0
+        }
+
+        const sound = alarmSounds.find(s => s.id === selectedSound)
+        if (sound) {
+            audioRef.current = new Audio(sound.file)
+            audioRef.current.volume = 0.7
+            audioRef.current.play().catch(e => console.error("Erro ao tocar som:", e))
+        }
+    }, [selectedSound])
 
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null
@@ -136,69 +187,12 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
         return () => {
             if (interval) clearInterval(interval)
         }
-    }, [isActive])
+    }, [isActive, timeLeft, playAlarmSound, setIsActive, completeSelectedTask, getTaskMessage])
 
-
-    const playSoundPreview = (soundId: string) => {
-        const sound = alarmSounds.find(s => s.id === soundId)
-        if (sound) {
-            const previewAudio = new Audio(sound.file)
-            previewAudio.volume = 0.7
-            previewAudio.play().catch(e => console.error("Erro ao tocar prévia:", e))
-        }
-    }
-
-    const playClickSound = () => {
-        if (clickSoundRef.current) {
-            clickSoundRef.current.volume = 0.5
-            clickSoundRef.current.currentTime = 0
-            clickSoundRef.current.play().catch(() => { })
-        }
-    }
-
-    const startTimerHandler = () => {
-        setIsActive(true)
-    }
-
-    const pauseTimer = () => {
-        setIsActive(false)
-    }
-
-    const resetTimer = () => {
-        setIsActive(false)
-        setTimeLeft(Math.round(minutes * 60))
-    }
-
-    const formatTime = () => {
-        const hours = Math.floor(timeLeft / 3600)
-        const mins = Math.floor((timeLeft % 3600) / 60)
-        const secs = timeLeft % 60
-
-        if (hours > 0) {
-            return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-        } else {
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-        }
-    }
-
-    const playAlarmSound = () => {
-        if (audioRef.current) {
-            audioRef.current.pause()
-            audioRef.current.currentTime = 0
-        }
-
-        const sound = alarmSounds.find(s => s.id === selectedSound)
-        if (sound) {
-            audioRef.current = new Audio(sound.file)
-            audioRef.current.volume = 0.7
-            audioRef.current.play().catch(e => console.error("Erro ao tocar som:", e))
-        }
-    }
-
-const openSettings = () => {
-    Swal.fire({
-        title: 'Configurações do Timer',
-        html: `
+    const openSettings = () => {
+        Swal.fire({
+            title: 'Configurações do Timer',
+            html: `
       <div class="text-left text-[#eee] space-y-6 px-2 text-sm">
         <div>
           <label class="block mb-2 text-[1.2em] tracking-wide">Duração (minutos):</label>
@@ -255,60 +249,59 @@ const openSettings = () => {
         </div>
       </div>
     `,
-        background: '#334',
-        color: '#eee',
-        width: '80%',
-        padding: '1.5rem',
-        showCancelButton: true,
-        confirmButtonText: 'Salvar',
-        cancelButtonText: 'Cancelar',
-        focusConfirm: false,
-        customClass: {
-            popup: 'rounded-xl border border-[#445] md:w-3/4 lg:w-1/2 max-w-3xl shadow-xl',
-            confirmButton: 'bg-[#445] hover:bg-[#556] text-white px-4 py-2 rounded mr-2 transition-all',
-            cancelButton: 'bg-[#445] hover:bg-[#556] text-white px-4 py-2 rounded transition-all',
-            // Remova a propriedade 'select' que não existe
-            input: 'text-[#eee]'
-        },
-        didOpen: () => {
-            const previewBtn = document.getElementById('swal-preview-btn');
-            const selectEl = document.getElementById('swal-sound') as HTMLSelectElement;
-            previewBtn?.addEventListener('click', () => {
-                const value = selectEl?.value;
-                playSoundPreview(value);
-            });
-        },
-        preConfirm: () => {
-            const minsInput = document.getElementById('swal-minutes') as HTMLInputElement;
-            const autoStartInput = document.getElementById('swal-autostart') as HTMLInputElement;
-            const soundInput = document.getElementById('swal-sound') as HTMLSelectElement;
+            background: '#334',
+            color: '#eee',
+            width: '80%',
+            padding: '1.5rem',
+            showCancelButton: true,
+            confirmButtonText: 'Salvar',
+            cancelButtonText: 'Cancelar',
+            focusConfirm: false,
+            customClass: {
+                popup: 'rounded-xl border border-[#445] md:w-3/4 lg:w-1/2 max-w-3xl shadow-xl',
+                confirmButton: 'bg-[#445] hover:bg-[#556] text-white px-4 py-2 rounded mr-2 transition-all',
+                cancelButton: 'bg-[#445] hover:bg-[#556] text-white px-4 py-2 rounded transition-all',
+                input: 'text-[#eee]'
+            },
+            didOpen: () => {
+                const previewBtn = document.getElementById('swal-preview-btn');
+                const selectEl = document.getElementById('swal-sound') as HTMLSelectElement;
+                previewBtn?.addEventListener('click', () => {
+                    const value = selectEl?.value;
+                    playSoundPreview(value);
+                });
+            },
+            preConfirm: () => {
+                const minsInput = document.getElementById('swal-minutes') as HTMLInputElement;
+                const autoStartInput = document.getElementById('swal-autostart') as HTMLInputElement;
+                const soundInput = document.getElementById('swal-sound') as HTMLSelectElement;
 
-            const mins = parseFloat(minsInput.value) || 25;
-            const autoStart = autoStartInput.checked;
-            const sound = soundInput.value;
+                const mins = parseFloat(minsInput.value) || 25;
+                const autoStart = autoStartInput.checked;
+                const sound = soundInput.value;
 
-            if (mins < 0.1 || mins > 1000) {
-                Swal.showValidationMessage('Digite um valor entre 1 e 1000 minutos');
-                return false;
+                if (mins < 0.1 || mins > 1000) {
+                    Swal.showValidationMessage('Digite um valor entre 1 e 1000 minutos');
+                    return false;
+                }
+
+                return { mins, autoStart, sound };
             }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const { mins, autoStart, sound } = result.value;
+                setMinutes(mins);
+                setAutoStart(autoStart);
+                setSelectedSound(sound);
+                setTimeLeft(Math.round(mins * 60));
 
-            return { mins, autoStart, sound };
-        }
-    }).then((result) => {
-        if (result.isConfirmed && result.value) {
-            const { mins, autoStart, sound } = result.value;
-            setMinutes(mins);
-            setAutoStart(autoStart);
-            setSelectedSound(sound);
-            setTimeLeft(Math.round(mins * 60));
-
-            if (isActive) {
-                setIsActive(false);
-                setTimeout(() => setIsActive(true), 100);
+                if (isActive) {
+                    setIsActive(false);
+                    setTimeout(() => setIsActive(true), 100);
+                }
             }
-        }
-    });
-};
+        });
+    };
 
     return (
         <div
@@ -318,7 +311,6 @@ const openSettings = () => {
             }}
         >
             <div className="bg-[#334] p-6 rounded-lg shadow-lg border border-[#445] w-full h-full ">
-                {/* Conteúdo atual do timer (mantido igual) */}
                 <div className="mb-3 flex justify-between items-center">
                     <h2 className="text-xl font-semibold flex items-center gap-2 text-[#eee]">
                         <AlarmClock size={24} /> Timer
