@@ -31,6 +31,7 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
     const audioRef = useRef<HTMLAudioElement | null>(null)
     const clickSoundRef = useRef<HTMLAudioElement | null>(null)
     const progress = timeLeft / (minutes * 60)
+    const endTimeRef = useRef<number | null>(null)
 
     useEffect(() => {
         const savedSettings = localStorage.getItem('timerSettings')
@@ -157,18 +158,19 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
 
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null
-        let endTime: number
 
         if (isActive) {
-            const now = Date.now()
-            endTime = now + timeLeft * 1000
+            if (endTimeRef.current === null) {
+                endTimeRef.current = Date.now() + timeLeft * 1000
+            }
 
             interval = setInterval(() => {
-                const secondsLeft = Math.max(0, Math.round((endTime - Date.now()) / 1000))
+                const secondsLeft = Math.max(0, Math.round((endTimeRef.current! - Date.now()) / 1000))
                 setTimeLeft(secondsLeft)
 
                 if (secondsLeft <= 0) {
                     clearInterval(interval!)
+                    endTimeRef.current = null
                     playAlarmSound()
                     setIsActive(false)
                     completeSelectedTask()
@@ -187,7 +189,8 @@ export default function Timer({ startTimerFlag, setStartTimerFlag }: TimerProps)
         return () => {
             if (interval) clearInterval(interval)
         }
-    }, [isActive, timeLeft, playAlarmSound, setIsActive, completeSelectedTask, getTaskMessage])
+    }, [isActive, playAlarmSound, setIsActive, completeSelectedTask, getTaskMessage])
+
 
     const openSettings = () => {
         Swal.fire({
